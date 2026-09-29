@@ -86,6 +86,43 @@ public final class PersistenceRepository {
         p.loadWarehouseStock(wanted);
     }
 
+    public static synchronized java.util.Map<String, java.util.List<String>> readProductColorImages(String productId) {
+        java.util.Map<String, java.util.List<String>> out = new java.util.LinkedHashMap<>();
+        if (productId == null) return out;
+        try (PreparedStatement ps=c().prepareStatement(
+                "SELECT color,image_path FROM product_color_images WHERE product_id=? ORDER BY color,sort_order")) {
+            ps.setString(1, productId);
+            try (ResultSet rs=ps.executeQuery()) {
+                while(rs.next()) out.computeIfAbsent(rs.getString(1), k -> new java.util.ArrayList<>()).add(rs.getString(2));
+            }
+        } catch(SQLException e){ throw db(e); }
+        return out;
+    }
+
+    public static synchronized void saveProductColorImages(String productId, java.util.Map<String, java.util.List<String>> images) {
+        if (productId == null) return;
+        try {
+            c().setAutoCommit(false);
+            try(PreparedStatement d=c().prepareStatement("DELETE FROM product_color_images WHERE product_id=?")){
+                d.setString(1,productId); d.executeUpdate();
+            }
+            try(PreparedStatement ins=c().prepareStatement(
+                    "INSERT INTO product_color_images(product_id,color,image_path,sort_order) VALUES(?,?,?,?)")){
+                if(images!=null) for(java.util.Map.Entry<String,java.util.List<String>> e:images.entrySet()){
+                    String color=e.getKey()==null?"":e.getKey().trim();
+                    if(color.isEmpty()||e.getValue()==null) continue;
+                    int order=0;
+                    for(String path:e.getValue()){
+                        if(path==null||path.isBlank()||order>=3) continue;
+                        ins.setString(1,productId);ins.setString(2,color);ins.setString(3,path);ins.setInt(4,order++);ins.addBatch();
+                    }
+                }
+                ins.executeBatch();
+            }
+            c().commit(); c().setAutoCommit(true);
+        } catch(SQLException e){ rollback(); throw db(e); }
+    }
+
     public static synchronized void saveProduct(Product p) {
         if(p==null) return;
         try {
