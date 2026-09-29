@@ -665,6 +665,18 @@ public class ReturnsPanel extends JPanel {
         }
     }
 
+    public static synchronized List<ReturnSnapshot> getReturnSnapshotsForOrder(String orderId) {
+        List<ReturnSnapshot> out = new ArrayList<>();
+        if (orderId == null) return out;
+        for (ReturnRecord r : returnRecords) {
+            if (r != null && orderId.equals(r.orderId)) {
+                out.add(new ReturnSnapshot(r.returnId, r.orderId, r.customer, r.product, r.productCode,
+                        r.size, r.color, r.quantity, r.date, r.amount, r.reason, r.disposition, r.loss));
+            }
+        }
+        return out;
+    }
+
     public static synchronized List<ReturnSnapshot> getReturnSnapshots() {
         List<ReturnSnapshot> out = new ArrayList<>();
         for (ReturnRecord r : returnRecords)
