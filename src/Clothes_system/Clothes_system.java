@@ -198,6 +198,10 @@ public class Clothes_system extends JFrame {
         String[] args
     ) {
 
+        // Every installation is assigned to exactly one brand account.
+        // No desktop UI is exposed until the brand administrator signs in.
+        if (!CutdownLoginDialog.showAndLogin(null)) return;
+
         // Cloud is authoritative for this installation. Do not initialize
         // SQLite or expose the UI unless the protected Cutdown cloud API is
         // reachable. This prevents local-only work during an internet outage.
