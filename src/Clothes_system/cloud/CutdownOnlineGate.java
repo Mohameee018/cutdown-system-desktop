@@ -29,7 +29,7 @@ public final class CutdownOnlineGate {
         if (!CutdownCloudConfig.configured()) return false;
         try {
             String body = new CutdownCloudClient().get("/api/health");
-            return body != null && body.contains(""ok":true");
+            return body != null && body.contains("\"ok\":true");
         } catch (Exception ignored) {
             return false;
         }
