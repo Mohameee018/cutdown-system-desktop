@@ -241,52 +241,7 @@ public class ReturnsPanel extends JPanel {
                 BorderLayout.WEST
         );
 
-        JButton newReturnButton =
-                new JButton(
-                        "+  New Return"
-                );
 
-        newReturnButton.setFocusPainted(false);
-
-        newReturnButton.setForeground(
-                Color.WHITE
-        );
-
-        newReturnButton.setBackground(
-                TEAL
-        );
-
-        newReturnButton.setFont(
-                new Font(
-                        "Arial",
-                        Font.BOLD,
-                        13
-                )
-        );
-
-        newReturnButton.setBorder(
-                BorderFactory.createEmptyBorder(
-                        12,
-                        20,
-                        12,
-                        20
-                )
-        );
-
-        newReturnButton.setCursor(
-                new Cursor(
-                        Cursor.HAND_CURSOR
-                )
-        );
-
-        newReturnButton.addActionListener(
-                e -> showNewReturnDialog()
-        );
-
-        header.add(
-                newReturnButton,
-                BorderLayout.EAST
-        );
 
         add(
                 header,
