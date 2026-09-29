@@ -45,7 +45,9 @@ public final class CutdownAutoUpdater {
         t.start();
     }
 
-    private static String value(Map<?,?> map, String key) { Object v = map.get(key); return v == null ? "" : String.valueOf(v); }\n\n    private static String currentVersion() {
+    private static String value(Map<?,?> map, String key) { Object v = map.get(key); return v == null ? "" : String.valueOf(v); }
+
+    private static String currentVersion() {
         return System.getProperty("cutdown.version",
                 System.getenv().getOrDefault("CUTDOWN_DESKTOP_VERSION", "1.0.0"));
     }
