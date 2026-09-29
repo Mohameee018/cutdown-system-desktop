@@ -354,7 +354,12 @@ public class ProductsPanel extends JPanel {
             String color=(String)colorPick.getSelectedItem();List<String> list=color==null?Collections.emptyList():imageMap.getOrDefault(color,Collections.emptyList());
             for(int i=0;i<3;i++)paths[i].setText(i<list.size()?list.get(i):"");
         };
-        colorPick.addActionListener(e->loadPhotos.run());
+        Runnable saveCurrentPhotos=()->{
+            String color=(String)colorPick.getSelectedItem(); if(color==null||color.isBlank()) return;
+            List<String> list=new ArrayList<>(); for(JTextField f:paths) if(!f.getText().trim().isEmpty()) list.add(f.getText().trim());
+            imageMap.put(color,list);
+        };
+        colorPick.addActionListener(e->{ if(colorPick.getItemCount()>0) loadPhotos.run(); });
         g.gridx=0;g.gridy=0;photos.add(new JLabel("Color"),g);g.gridx=1;photos.add(colorPick,g);
         for(int i=0;i<3;i++){final int n=i;g.gridx=0;g.gridy=i+1;photos.add(new JLabel("Image "+(i+1)),g);g.gridx=1;JPanel line=new JPanel(new BorderLayout(6,0));line.setBackground(WHITE);line.add(paths[i],BorderLayout.CENTER);JButton choose=button("Choose",new Color(240,243,243),DARK);choose.addActionListener(e->{JFileChooser fc=new JFileChooser();fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Image Files","jpg","jpeg","png","webp","gif"));if(fc.showOpenDialog(d)==JFileChooser.APPROVE_OPTION)paths[n].setText(fc.getSelectedFile().getAbsolutePath());});line.add(choose,BorderLayout.EAST);photos.add(line,g);}
         g.gridx=1;g.gridy=4;JButton clearPhotos=button("Clear color photos",new Color(245,235,235),new Color(130,55,55));clearPhotos.addActionListener(e->{for(JTextField f:paths)f.setText("");});photos.add(clearPhotos,g);
@@ -382,8 +387,7 @@ public class ProductsPanel extends JPanel {
             LinkedHashSet<String> colors=new LinkedHashSet<>();for(Product.ProductVariant v:next)colors.add(v.getColor());
             for(String color:colors){List<String> list=new ArrayList<>();for(JTextField f:paths){}}
             // Save photo fields for every color by reading the current color selection.
-            String selected=(String)colorPick.getSelectedItem();
-            if(selected!=null&&!selected.isBlank()){List<String> list=new ArrayList<>();for(JTextField f:paths)if(!f.getText().trim().isEmpty())list.add(f.getText().trim());imageMap.put(selected,list);}
+            saveCurrentPhotos.run();
             // Keep previously saved photos for other colors, while dropping colors no longer used.
             imageMap.keySet().removeIf(k->!colors.contains(k));
             Clothes_system.db.PersistenceRepository.saveProductColorImages(product.getId(),imageMap);
