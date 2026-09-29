@@ -59,9 +59,6 @@ public final class CutdownLoginDialog extends JDialog {
     }
 
     public static boolean showAndLogin(Window owner) {
-        if (!CutdownCloudConfig.baseUrl().isBlank() && !CutdownCloudConfig.syncToken().isBlank()) {
-            return true;
-        }
         CutdownLoginDialog dialog = new CutdownLoginDialog(owner);
         dialog.setVisible(true);
         return dialog.authenticated;
