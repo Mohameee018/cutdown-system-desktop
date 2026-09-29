@@ -552,6 +552,7 @@ public class OrdersPanel extends JPanel {
                 new JComboBox<>(
                         new String[]{
                                 "All Delivery Status",
+                                "Pending",
                                 "With Shipping Company",
                                 "Out for Delivery",
                                 "Delivered",
