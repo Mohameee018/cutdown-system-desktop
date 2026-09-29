@@ -2,6 +2,7 @@ package Clothes_system;
 
 import Clothes_system.db.DatabaseManager;
 import Clothes_system.db.PersistenceRepository;
+import Clothes_system.cloud.CutdownOnlineGate;
 
 import javax.swing.*;
 import java.awt.*;
@@ -197,6 +198,13 @@ public class Clothes_system extends JFrame {
         String[] args
     ) {
 
+        // Cloud is authoritative for this installation. Do not initialize
+        // SQLite or expose the UI unless the protected Cutdown cloud API is
+        // reachable. This prevents local-only work during an internet outage.
+        if (!CutdownOnlineGate.requireOnlineAtStartup(null)) {
+            return;
+        }
+
         // ================= SQLITE STARTUP =================
         DatabaseManager.initialize();
         PersistenceRepository.markSeedCompleteIfDatabaseAlreadyHasData();
@@ -224,6 +232,7 @@ public class Clothes_system extends JFrame {
             Clothes_system frame = new Clothes_system();
             PersistenceRepository.markInitialSeedComplete();
             PersistenceRepository.saveAll();
+            CutdownOnlineGate.installWatchdog(frame);
             frame.setVisible(true);
         });
     }
