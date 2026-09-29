@@ -300,10 +300,12 @@ public class ProductsPanel extends JPanel {
             if(cp>sp && JOptionPane.showConfirmDialog(d,"Cost price is higher than selling price. Continue?","Check Price",JOptionPane.YES_NO_OPTION,JOptionPane.WARNING_MESSAGE)!=JOptionPane.YES_OPTION)return;
             if(!manager.isSkuAvailable(sSku,edit?existing.getId():null)){JOptionPane.showMessageDialog(d,"This SKU is already used by another product.","Duplicate SKU",JOptionPane.WARNING_MESSAGE);return;}
             int q=(Integer)stock.getValue(),mq=(Integer)min.getValue();String sz=size.getSelectedItem().toString();
+            Product createdProduct=null;
             if(!edit){
                 Product p=new Product(manager.generateProductId(),sSku,sName,sCat,sDesc,image[0],sp,cp,q,mq);
                 p.addVariant(new Product.ProductVariant(p.getId()+"-V001",sColor,sz,q));
                 if(!manager.addProduct(p)){JOptionPane.showMessageDialog(d,"Could not add the product.","Error",JOptionPane.ERROR_MESSAGE);return;}
+                createdProduct=p;
             }else{
                 existing.setSku(sSku);existing.setName(sName);existing.setCategory(sCat);existing.setDescription(sDesc);existing.setImagePath(image[0]);existing.setMinimumStock(mq);
                 if(Double.compare(existing.getSellingPrice(),sp)!=0||Double.compare(existing.getCostPrice(),cp)!=0)existing.updatePrice(sp,cp,"Product edited");
@@ -314,6 +316,7 @@ public class ProductsPanel extends JPanel {
             }
             refreshTable();d.dispose();
             JOptionPane.showMessageDialog(this,edit?"Product updated successfully!":"Product added successfully!","Success",JOptionPane.INFORMATION_MESSAGE);
+            if(createdProduct!=null) showVariantsDialog(createdProduct);
         });
         if(edit){JButton toggle=button(existing.isActive()?"Deactivate":"Activate",new Color(245,235,235),new Color(130,55,55));toggle.addActionListener(e->{if(existing.isActive()){if(JOptionPane.showConfirmDialog(d,"Deactivate this product? Old orders will remain safe.","Deactivate Product",JOptionPane.YES_NO_OPTION)==JOptionPane.YES_OPTION){manager.deactivateProduct(existing.getId());refreshTable();d.dispose();}}else{manager.activateProduct(existing.getId());refreshTable();d.dispose();}});buttons.add(toggle);}
         buttons.add(cancel);buttons.add(save);main.add(buttons,BorderLayout.SOUTH);d.setContentPane(main);d.setVisible(true);
