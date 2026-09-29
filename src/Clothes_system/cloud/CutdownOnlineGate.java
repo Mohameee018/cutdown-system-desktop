@@ -2,6 +2,7 @@ package Clothes_system.cloud;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class CutdownOnlineGate {
     private CutdownOnlineGate() {}
@@ -78,7 +79,9 @@ public final class CutdownOnlineGate {
         glass.setVisible(false);
         frame.setGlassPane(glass);
 
+        AtomicBoolean checking = new AtomicBoolean(false);
         Timer timer = new Timer(3000, e -> {
+            if (!checking.compareAndSet(false, true)) return;
             new Thread(() -> {
                 boolean online = isOnline();
                 SwingUtilities.invokeLater(() -> {
@@ -86,6 +89,7 @@ public final class CutdownOnlineGate {
                     status.setText(online ? "Connected" : "Waiting for cloud connection...");
                     frame.revalidate();
                     frame.repaint();
+                    checking.set(false);
                 });
             }, "cutdown-online-check").start();
         });
