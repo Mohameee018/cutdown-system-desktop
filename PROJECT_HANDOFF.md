@@ -377,3 +377,25 @@ Compared with the previous result of `63 PASS / 7 FAIL / 3 PARTIAL / 1 N/D` (74 
 `STATIC VERIFICATION INCONCLUSIVE — RUNTIME TEST REQUIRED`
 
 Every fix above is internally consistent on careful static reading, traces cleanly through every call site I could find via exhaustive grep, and preserves the previously-verified order/stock/return/persistence logic except where a priority explicitly required a change — but this project still cannot be compiled or run in this container, so nothing here can be upgraded to a genuine PASS until it's built and smoke-tested with a real JDK 21 (per the Known Limitations carried over from Parts 1 and 2).
+
+
+# PART 4 — Whole-Order Returns Scope
+
+The Returns UI has been changed to a whole-order-only workflow.
+
+- The main Returns screen layout/table/summary cards remain unchanged.
+- The old product + quantity return dialog was removed from the New Return action.
+- New Return now selects an eligible order and delegates to the existing
+  `processWholeOrderReturn(...)` path.
+- Partial Return is no longer exposed as a user action.
+- Order status/delivery dropdowns no longer offer `Partially Returned` as a
+  selectable value.
+- Existing legacy partial-return compatibility code was deliberately left
+  in place for now so historical data and existing persistence do not break
+  during the migration to Supabase. It is not a new workflow and should be
+  removed only after the Supabase migration/legacy-data audit is complete.
+- The canonical Supabase schema for the new integration enforces
+  `returns.return_type = 'whole_order'`.
+
+Commit: whole-order return UI cleanup completed before the shared Supabase
+migration work.
