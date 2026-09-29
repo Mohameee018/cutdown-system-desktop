@@ -53,6 +53,16 @@ final class DatabaseSchema {
         )
         """,
         """
+        CREATE TABLE IF NOT EXISTS product_color_images (
+            product_id TEXT NOT NULL,
+            color TEXT NOT NULL,
+            image_path TEXT NOT NULL,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY(product_id,color,sort_order),
+            FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE CASCADE
+        )
+        """,
+ """
         CREATE TABLE IF NOT EXISTS product_price_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             product_id TEXT NOT NULL,
@@ -179,6 +189,7 @@ final class DatabaseSchema {
 
     static final String[] CREATE_INDEXES = {
         "CREATE INDEX IF NOT EXISTS idx_variants_product ON product_variants(product_id)",
+        "CREATE INDEX IF NOT EXISTS idx_color_images_product ON product_color_images(product_id)",
         "CREATE INDEX IF NOT EXISTS idx_stock_product ON product_warehouse_stock(product_id)",
         "CREATE INDEX IF NOT EXISTS idx_stock_warehouse ON product_warehouse_stock(warehouse_id)",
         "CREATE INDEX IF NOT EXISTS idx_price_history_product ON product_price_history(product_id)",
