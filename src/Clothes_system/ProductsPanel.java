@@ -11,7 +11,7 @@ import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.util.List;
+import java.util.*;
 
 public class ProductsPanel extends JPanel {
 
@@ -284,6 +284,9 @@ public class ProductsPanel extends JPanel {
         JScrollPane fs=new JScrollPane(form);fs.setBorder(null);fs.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);main.add(fs,BorderLayout.CENTER);
 
         JPanel buttons=new JPanel(new FlowLayout(FlowLayout.RIGHT,10,15));buttons.setBackground(WHITE);
+        JButton variantsBtn=button("Variants / Colors",new Color(235,242,241),DARK);
+        variantsBtn.addActionListener(e->{ if(edit) showVariantsDialog(existing); else JOptionPane.showMessageDialog(d,"Save the product first, then configure its colors, sizes, stock and photos.","Product Variants",JOptionPane.INFORMATION_MESSAGE); });
+        buttons.add(variantsBtn);
         JButton cancel=button("Cancel",new Color(240,243,243),new Color(70,80,80));
         JButton save=button(edit?"Save Changes":"Save Product",PRIMARY,Color.WHITE);
         cancel.addActionListener(e->d.dispose());
@@ -314,6 +317,81 @@ public class ProductsPanel extends JPanel {
         });
         if(edit){JButton toggle=button(existing.isActive()?"Deactivate":"Activate",new Color(245,235,235),new Color(130,55,55));toggle.addActionListener(e->{if(existing.isActive()){if(JOptionPane.showConfirmDialog(d,"Deactivate this product? Old orders will remain safe.","Deactivate Product",JOptionPane.YES_NO_OPTION)==JOptionPane.YES_OPTION){manager.deactivateProduct(existing.getId());refreshTable();d.dispose();}}else{manager.activateProduct(existing.getId());refreshTable();d.dispose();}});buttons.add(toggle);}
         buttons.add(cancel);buttons.add(save);main.add(buttons,BorderLayout.SOUTH);d.setContentPane(main);d.setVisible(true);
+    }
+
+    private void showVariantsDialog(Product product) {
+        if(product==null) return;
+        JDialog d=new JDialog(SwingUtilities.getWindowAncestor(this),"Variants, Sizes & Color Photos",Dialog.ModalityType.APPLICATION_MODAL);
+        d.setSize(850,650); d.setLocationRelativeTo(this);
+        JPanel root=new JPanel(new BorderLayout(12,12));root.setBackground(WHITE);root.setBorder(new EmptyBorder(20,20,20,20));
+
+        DefaultTableModel vm=new DefaultTableModel(new Object[]{"Color","Size","Stock"},0){
+            public boolean isCellEditable(int r,int col){return true;}
+        };
+        for(Product.ProductVariant v:product.getVariants()) vm.addRow(new Object[]{v.getColor(),v.getSize(),v.getStockQuantity()});
+        JTable vt=new JTable(vm);vt.setRowHeight(34);vt.setFont(new Font("Arial",Font.PLAIN,12));
+        vt.getTableHeader().setFont(new Font("Arial",Font.BOLD,12));
+        JScrollPane vs=new JScrollPane(vt);
+        JPanel top=new JPanel(new BorderLayout(0,8));top.setBackground(WHITE);
+        JLabel help=new JLabel("Each row is one exact Color + Size combination. Stock belongs to that combination.");
+        help.setForeground(new Color(110,120,120));help.setFont(new Font("Arial",Font.PLAIN,11));top.add(help,BorderLayout.NORTH);top.add(vs,BorderLayout.CENTER);
+        root.add(top,BorderLayout.CENTER);
+
+        Map<String,List<String>> imageMap=new LinkedHashMap<>(Clothes_system.db.PersistenceRepository.readProductColorImages(product.getId()));
+        JPanel photos=new JPanel(new GridBagLayout());photos.setBackground(WHITE);photos.setBorder(BorderFactory.createTitledBorder("Color photos — up to 3 images per color"));
+        GridBagConstraints g=new GridBagConstraints();g.insets=new Insets(5,5,5,5);g.fill=GridBagConstraints.HORIZONTAL;g.weightx=1;
+        JComboBox<String> colorPick=new JComboBox<>();colorPick.setEditable(false);styleCombo(colorPick);
+        JTextField[] paths={textField(),textField(),textField()};
+        for(JTextField f:paths)f.setPreferredSize(new Dimension(360,34));
+        Runnable refreshColors=()->{
+            String keep=(String)colorPick.getSelectedItem();colorPick.removeAllItems();
+            LinkedHashSet<String> colors=new LinkedHashSet<>();
+            for(int i=0;i<vm.getRowCount();i++){String cc=String.valueOf(vm.getValueAt(i,0)).trim();if(!cc.isEmpty())colors.add(cc);}
+            for(String cc:colors)colorPick.addItem(cc);
+            if(keep!=null&&colors.contains(keep))colorPick.setSelectedItem(keep); else if(colorPick.getItemCount()>0)colorPick.setSelectedIndex(0);
+        };
+        Runnable loadPhotos=()->{
+            String color=(String)colorPick.getSelectedItem();List<String> list=color==null?Collections.emptyList():imageMap.getOrDefault(color,Collections.emptyList());
+            for(int i=0;i<3;i++)paths[i].setText(i<list.size()?list.get(i):"");
+        };
+        colorPick.addActionListener(e->loadPhotos.run());
+        g.gridx=0;g.gridy=0;photos.add(new JLabel("Color"),g);g.gridx=1;photos.add(colorPick,g);
+        for(int i=0;i<3;i++){final int n=i;g.gridx=0;g.gridy=i+1;photos.add(new JLabel("Image "+(i+1)),g);g.gridx=1;JPanel line=new JPanel(new BorderLayout(6,0));line.setBackground(WHITE);line.add(paths[i],BorderLayout.CENTER);JButton choose=button("Choose",new Color(240,243,243),DARK);choose.addActionListener(e->{JFileChooser fc=new JFileChooser();fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Image Files","jpg","jpeg","png","webp","gif"));if(fc.showOpenDialog(d)==JFileChooser.APPROVE_OPTION)paths[n].setText(fc.getSelectedFile().getAbsolutePath());});line.add(choose,BorderLayout.EAST);photos.add(line,g);}
+        g.gridx=1;g.gridy=4;JButton clearPhotos=button("Clear color photos",new Color(245,235,235),new Color(130,55,55));clearPhotos.addActionListener(e->{for(JTextField f:paths)f.setText("");});photos.add(clearPhotos,g);
+        root.add(photos,BorderLayout.SOUTH);
+
+        JButton add=button("+ Add Variant",PRIMARY,Color.WHITE);add.addActionListener(e->vm.addRow(new Object[]{"","",0}));
+        JButton remove=button("Remove Selected",new Color(245,235,235),new Color(130,55,55));remove.addActionListener(e->{int r=vt.getSelectedRow();if(r>=0)vm.removeRow(vt.convertRowIndexToModel(r));refreshColors.run();loadPhotos.run();});
+        JButton save=button("Save Variants",PRIMARY,Color.WHITE);
+        JButton cancel=button("Cancel",new Color(240,243,243),DARK);
+        JPanel actions=new JPanel(new FlowLayout(FlowLayout.RIGHT,8,0));actions.setBackground(WHITE);actions.add(add);actions.add(remove);actions.add(cancel);actions.add(save);
+        JPanel south=new JPanel(new BorderLayout(0,10));south.setBackground(WHITE);south.add(actions,BorderLayout.SOUTH);root.add(south,BorderLayout.PAGE_END);
+        cancel.addActionListener(e->d.dispose());
+        save.addActionListener(e->{
+            LinkedHashSet<String> keys=new LinkedHashSet<>();List<Product.ProductVariant> next=new ArrayList<>();int total=0;
+            for(int i=0;i<vm.getRowCount();i++){
+                String color=String.valueOf(vm.getValueAt(i,0)).trim(),size=String.valueOf(vm.getValueAt(i,1)).trim();int stock;
+                try{stock=Integer.parseInt(String.valueOf(vm.getValueAt(i,2)).trim());}catch(Exception ex){JOptionPane.showMessageDialog(d,"Stock must be a whole number.","Invalid Stock",JOptionPane.WARNING_MESSAGE);return;}
+                if(color.isEmpty()||size.isEmpty()||stock<0){JOptionPane.showMessageDialog(d,"Every variant needs a color, size and non-negative stock.","Invalid Variant",JOptionPane.WARNING_MESSAGE);return;}
+                String key=color.toLowerCase(Locale.ROOT)+"|"+size.toLowerCase(Locale.ROOT);if(!keys.add(key)){JOptionPane.showMessageDialog(d,"Duplicate color + size combination: "+color+" / "+size,"Duplicate Variant",JOptionPane.WARNING_MESSAGE);return;}
+                next.add(new Product.ProductVariant(product.getId()+"-V"+String.format("%03d",i+1),color,size,stock));total+=stock;
+            }
+            if(next.isEmpty()){JOptionPane.showMessageDialog(d,"Add at least one variant.","Variants",JOptionPane.WARNING_MESSAGE);return;}
+            product.getVariants().clear();for(Product.ProductVariant v:next)product.addVariant(v);
+            product.setStock(total,"Variant matrix updated");
+            LinkedHashSet<String> colors=new LinkedHashSet<>();for(Product.ProductVariant v:next)colors.add(v.getColor());
+            for(String color:colors){List<String> list=new ArrayList<>();for(JTextField f:paths){}}
+            // Save photo fields for every color by reading the current color selection.
+            String selected=(String)colorPick.getSelectedItem();
+            if(selected!=null&&!selected.isBlank()){List<String> list=new ArrayList<>();for(JTextField f:paths)if(!f.getText().trim().isEmpty())list.add(f.getText().trim());imageMap.put(selected,list);}
+            // Keep previously saved photos for other colors, while dropping colors no longer used.
+            imageMap.keySet().removeIf(k->!colors.contains(k));
+            Clothes_system.db.PersistenceRepository.saveProductColorImages(product.getId(),imageMap);
+            Clothes_system.db.PersistenceRepository.saveProduct(product);
+            JOptionPane.showMessageDialog(d,"Variants, sizes, stock and color photos saved.","Saved",JOptionPane.INFORMATION_MESSAGE);
+            d.dispose();refreshTable();
+        });
+        refreshColors.run();loadPhotos.run();d.setContentPane(root);d.setVisible(true);
     }
 
     private void row(JPanel p,GridBagConstraints g,int y,String label,JComponent c){g.gridx=0;g.gridy=y;g.weightx=.3;JLabel l=new JLabel(label);l.setFont(new Font("Arial",Font.BOLD,12));l.setForeground(new Color(55,70,70));p.add(l,g);g.gridx=1;g.weightx=.7;p.add(c,g);}
