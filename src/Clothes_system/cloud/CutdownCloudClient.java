@@ -21,7 +21,12 @@ public final class CutdownCloudClient {
     }
 
     public String get(String path) throws IOException, InterruptedException {
-        return sendWithRetry(request(path).GET().build());
+        HttpRequest request = request(path).GET().build();
+        HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IOException("Cutdown API returned HTTP " + response.statusCode() + ": " + response.body());
+        }
+        return response.body();
     }
 
     public String postJson(String path, String json) throws IOException, InterruptedException {
