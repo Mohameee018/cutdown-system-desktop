@@ -58,7 +58,7 @@ public final class CutdownCloudClient {
     }
 
     public String login(String email, String password) throws IOException, InterruptedException {
-        String json = "{\\"email\\":\\"" + escapeJson(email) + "\\",\\"password\\":\\"" + escapeJson(password) + "\\"}";
+        String json = "{\"email\":\"" + escapeJson(email) + "\",\"password\":\"" + escapeJson(password) + "\"}";
         HttpRequest request = rawRequest("/api/desktop/auth/login")
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(json))
@@ -69,10 +69,6 @@ public final class CutdownCloudClient {
                     ? "Login failed (HTTP " + response.statusCode() + ")" : response.body());
         }
         return response.body();
-    }
-
-    public String getWithAccessToken(String path) throws IOException, InterruptedException {
-        return get(path);
     }
 
     private HttpRequest.Builder rawRequest(String path) {
@@ -88,7 +84,7 @@ public final class CutdownCloudClient {
 
     private static String escapeJson(String value) {
         if (value == null) return "";
-        return value.replace("\\\\", "\\\\\\\\").replace("\\"", "\\\\"");
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     private HttpRequest.Builder request(String path) {
