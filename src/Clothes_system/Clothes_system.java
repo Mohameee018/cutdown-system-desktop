@@ -10,13 +10,6 @@ import javax.swing.*;
 import java.awt.*;
 
 public class Clothes_system extends JFrame {
-import Clothes_system.db.PersistenceRepository;
-import Clothes_system.cloud.CutdownOnlineGate;
-
-import javax.swing.*;
-import java.awt.*;
-
-public class Clothes_system extends JFrame {
 
     private JPanel mainPanel;
     private CardLayout cardLayout;
