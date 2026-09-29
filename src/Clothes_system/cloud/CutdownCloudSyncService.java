@@ -68,7 +68,7 @@ public final class CutdownCloudSyncService {
                 Path path=Path.of(paths.get(i));
                 if(!Files.isRegularFile(path)) continue;
                 long size=Files.size(path);
-                if(size>4_000_000) continue;
+                if(size>1_500_000) continue;
                 String mime=Files.probeContentType(path);
                 if(mime==null) mime=mimeFor(path.toString());
                 if(n++>0)b.append(',');
@@ -79,6 +79,25 @@ public final class CutdownCloudSyncService {
                 field(b,"alt_text",p.getName()).append(',');
                 field(b,"data_base64",Base64.getEncoder().encodeToString(Files.readAllBytes(path)));
                 b.append('}');
+            }
+        }
+        // The main image is selected in Add Product before color-photo fields exist.
+        // Always sync it as the default product image so a newly-created product is visible on the website.
+        if(n==0 && p.getImagePath()!=null && !p.getImagePath().isBlank()){
+            Path path=Path.of(p.getImagePath());
+            if(Files.isRegularFile(path)){
+                long size=Files.size(path);
+                if(size<=1_500_000){
+                    String mime=Files.probeContentType(path);
+                    if(mime==null) mime=mimeFor(path.toString());
+                    b.append('{');
+                    field(b,"color","").append(',');
+                    number(b,"sort_order",0).append(',');
+                    field(b,"mime_type",mime).append(',');
+                    field(b,"alt_text",p.getName()).append(',');
+                    field(b,"data_base64",Base64.getEncoder().encodeToString(Files.readAllBytes(path)));
+                    b.append('}');
+                }
             }
         }
         b.append("]}}");
