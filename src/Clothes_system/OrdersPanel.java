@@ -3913,6 +3913,8 @@ public class OrdersPanel extends JPanel {
                         null;
             }
 
+            PersistenceRepository.saveOrder(order);
+            CutdownCloudOrderSyncService.syncStatusAsync(order.id, order.orderStatus, order.deliveryStatus);
             Clothes_system.refreshAllDataViews();
             return;
         }
