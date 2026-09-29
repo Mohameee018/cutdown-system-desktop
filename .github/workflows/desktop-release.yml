@@ -42,7 +42,7 @@ jobs:
         shell: pwsh
         run: |
           $version = $env:GITHUB_REF_NAME.TrimStart('v')
-          jpackage --type exe --name Cutdown --app-version $version --input package/input --main-jar Cutdown.jar --main-class Clothes_system.Clothes_system --dest package/output --win-dir-chooser --win-menu --win-shortcut --vendor "Cutdown"
+          jpackage --type exe --name Cutdown --app-version $version --input package/input --main-jar Cutdown.jar --main-class Clothes_system.Clothes_system --java-options "-Dcutdown.version=$version" --dest package/output --win-dir-chooser --win-menu --win-shortcut --win-upgrade-uuid "8c4c2d6f-7a8b-4f6d-9c21-1d2a4b7e8f30" --vendor "Cutdown"
 
       - name: Generate SHA-256
         shell: pwsh
