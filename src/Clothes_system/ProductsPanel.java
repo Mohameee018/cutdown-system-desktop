@@ -1,6 +1,7 @@
 package Clothes_system;
 
 import Clothes_system.cloud.CutdownCloudSyncService;
+import Clothes_system.db.PersistenceRepository;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -160,7 +161,7 @@ public class ProductsPanel extends JPanel {
     private void refreshTable(){
         if(model==null)return;
         model.setRowCount(0);
-        List<Product> products=manager.getAllProducts();
+        java.util.List<Product> products=manager.getAllProducts();
         for(Product p:products){
             String size="",color="";
             if(!p.getVariants().isEmpty()){
@@ -344,7 +345,7 @@ public class ProductsPanel extends JPanel {
         help.setForeground(new Color(110,120,120));help.setFont(new Font("Arial",Font.PLAIN,11));top.add(help,BorderLayout.NORTH);top.add(vs,BorderLayout.CENTER);
         root.add(top,BorderLayout.CENTER);
 
-        Map<String,List<String>> imageMap=new LinkedHashMap<>(Clothes_system.db.PersistenceRepository.readProductColorImages(product.getId()));
+        Map<String,java.util.List<String>> imageMap=new LinkedHashMap<>(PersistenceRepository.readProductColorImages(product.getId()));
         JPanel photos=new JPanel(new GridBagLayout());photos.setBackground(WHITE);photos.setBorder(BorderFactory.createTitledBorder("Color photos — up to 3 images per color"));
         GridBagConstraints g=new GridBagConstraints();g.insets=new Insets(5,5,5,5);g.fill=GridBagConstraints.HORIZONTAL;g.weightx=1;
         JComboBox<String> colorPick=new JComboBox<>();colorPick.setEditable(false);styleCombo(colorPick);
@@ -358,12 +359,12 @@ public class ProductsPanel extends JPanel {
             if(keep!=null&&colors.contains(keep))colorPick.setSelectedItem(keep); else if(colorPick.getItemCount()>0)colorPick.setSelectedIndex(0);
         };
         Runnable loadPhotos=()->{
-            String color=(String)colorPick.getSelectedItem();List<String> list=color==null?Collections.emptyList():imageMap.getOrDefault(color,Collections.emptyList());
+            String color=(String)colorPick.getSelectedItem();java.util.List<String> list=color==null?Collections.emptyList():imageMap.getOrDefault(color,Collections.emptyList());
             for(int i=0;i<3;i++)paths[i].setText(i<list.size()?list.get(i):"");
         };
         Runnable saveCurrentPhotos=()->{
             String color=(String)colorPick.getSelectedItem(); if(color==null||color.isBlank()) return;
-            List<String> list=new ArrayList<>(); for(JTextField f:paths) if(!f.getText().trim().isEmpty()) list.add(f.getText().trim());
+            java.util.List<String> list=new ArrayList<>(); for(JTextField f:paths) if(!f.getText().trim().isEmpty()) list.add(f.getText().trim());
             imageMap.put(color,list);
         };
         colorPick.addActionListener(e->{ if(colorPick.getItemCount()>0) loadPhotos.run(); });
@@ -383,7 +384,7 @@ public class ProductsPanel extends JPanel {
         JPanel south=new JPanel(new BorderLayout(0,10));south.setBackground(WHITE);south.add(photos,BorderLayout.CENTER);south.add(actions,BorderLayout.SOUTH);root.add(south,BorderLayout.PAGE_END);
         cancel.addActionListener(e->d.dispose());
         save.addActionListener(e->{
-            LinkedHashSet<String> keys=new LinkedHashSet<>();List<Product.ProductVariant> next=new ArrayList<>();int total=0;
+            LinkedHashSet<String> keys=new LinkedHashSet<>();java.util.List<Product.ProductVariant> next=new ArrayList<>();int total=0;
             for(int i=0;i<vm.getRowCount();i++){
                 String color=String.valueOf(vm.getValueAt(i,0)).trim(),size=String.valueOf(vm.getValueAt(i,1)).trim();int stock;
                 try{stock=Integer.parseInt(String.valueOf(vm.getValueAt(i,2)).trim());}catch(Exception ex){JOptionPane.showMessageDialog(d,"Stock must be a whole number.","Invalid Stock",JOptionPane.WARNING_MESSAGE);return;}
@@ -395,13 +396,13 @@ public class ProductsPanel extends JPanel {
             product.getVariants().clear();for(Product.ProductVariant v:next)product.addVariant(v);
             product.setStock(total,"Variant matrix updated");
             LinkedHashSet<String> colors=new LinkedHashSet<>();for(Product.ProductVariant v:next)colors.add(v.getColor());
-            for(String color:colors){List<String> list=new ArrayList<>();for(JTextField f:paths){}}
+            for(String color:colors){java.util.List<String> list=new ArrayList<>();for(JTextField f:paths){}}
             // Save photo fields for every color by reading the current color selection.
             saveCurrentPhotos.run();
             // Keep previously saved photos for other colors, while dropping colors no longer used.
             imageMap.keySet().removeIf(k->!colors.contains(k));
-            Clothes_system.db.PersistenceRepository.saveProductColorImages(product.getId(),imageMap);
-            Clothes_system.db.PersistenceRepository.saveProduct(product);
+            PersistenceRepository.saveProductColorImages(product.getId(),imageMap);
+            PersistenceRepository.saveProduct(product);
             CutdownCloudSyncService.syncProductAsync(product);
             JOptionPane.showMessageDialog(d,"Variants, sizes, stock and color photos saved.","Saved",JOptionPane.INFORMATION_MESSAGE);
             d.dispose();refreshTable();
