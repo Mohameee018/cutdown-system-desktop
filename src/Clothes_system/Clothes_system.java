@@ -2,8 +2,6 @@ package Clothes_system;
 
 import Clothes_system.db.DatabaseManager;
 import Clothes_system.db.PersistenceRepository;
-import Clothes_system.cloud.CutdownAutoUpdater;
-import Clothes_system.cloud.CutdownLoginDialog;
 import Clothes_system.cloud.CutdownOnlineGate;
 
 import javax.swing.*;
@@ -202,7 +200,7 @@ public class Clothes_system extends JFrame {
 
         // Every installation is assigned to exactly one brand account.
         // No desktop UI is exposed until the brand administrator signs in.
-        if (!CutdownLoginDialog.showAndLogin(null)) return;
+        if (!CutdownOnlineGate.requireLogin(null)) return;
 
         // Cloud is authoritative for this installation. Do not initialize
         // SQLite or expose the UI unless the protected Cutdown cloud API is
@@ -240,7 +238,7 @@ public class Clothes_system extends JFrame {
             PersistenceRepository.saveAll();
             CutdownOnlineGate.installWatchdog(frame);
             frame.setVisible(true);
-            CutdownAutoUpdater.checkAsync(frame);
+            CutdownOnlineGate.checkForUpdates(frame);
         });
     }
 }
