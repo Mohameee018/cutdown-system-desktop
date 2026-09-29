@@ -1,6 +1,7 @@
 package Clothes_system;
 
 import Clothes_system.db.PersistenceRepository;
+import Clothes_system.cloud.CutdownCloudReturnSyncService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -1773,6 +1774,7 @@ public class ReturnsPanel extends JPanel {
         // Whole-order returns are mutations too; make them durable before
         // repainting the screens so a restart cannot lose the return.
         PersistenceRepository.saveAll();
+        CutdownCloudReturnSyncService.syncReturnAsync(order);
         Clothes_system.refreshAllDataViews();
         JOptionPane.showMessageDialog(parent, "Entire order " + order.id + " was returned successfully.", "Whole Return", JOptionPane.INFORMATION_MESSAGE);
     }
