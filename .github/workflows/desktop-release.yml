@@ -2,6 +2,8 @@ name: Desktop release
 
 on:
   push:
+    branches:
+      - "main"
     tags:
       - "v*"
 
@@ -10,6 +12,7 @@ permissions:
 
 jobs:
   release:
+    if: startsWith(github.ref, 'refs/tags/v') || contains(github.event.head_commit.message, '[build-release]')
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,8 +44,8 @@ jobs:
       - name: Build Windows installer
         shell: pwsh
         run: |
-          $version = $env:GITHUB_REF_NAME.TrimStart('v')
-          jpackage --type exe --name Cutdown --app-version $version --input package/input --main-jar Cutdown.jar --main-class Clothes_system.Clothes_system --java-options "-Dcutdown.version=$version" --dest package/output --win-dir-chooser --win-menu --win-shortcut --win-upgrade-uuid "8c4c2d6f-7a8b-4f6d-9c21-1d2a4b7e8f30" --vendor "Cutdown"
+          if ($env:GITHUB_REF_TYPE -eq "tag") { $version = $env:GITHUB_REF_NAME.TrimStart("v") } else { $version = "1.0.0" }
+          jpackage --type exe --name "BPC Clothes System" --app-version $version --input package/input --main-jar Cutdown.jar --main-class Clothes_system.Clothes_system --java-options "-Dcutdown.version=$version" --dest package/output --win-dir-chooser --win-menu --win-shortcut --win-upgrade-uuid "8c4c2d6f-7a8b-4f6d-9c21-1d2a4b7e8f30" --vendor "BPC"
 
       - name: Generate SHA-256
         shell: pwsh
@@ -55,13 +58,15 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Cutdown-Windows-${{ github.ref_name }}
+          name: BPC-Clothes-System-Windows-${{ github.ref_name }}
           path: package/output/*
 
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'v1.0.0' }}
+          name: BPC Clothes System v${{ github.ref_type == 'tag' && github.ref_name || '1.0.0' }}
           files: |
             package/output/*.exe
             package/output/SHA256SUMS.txt
