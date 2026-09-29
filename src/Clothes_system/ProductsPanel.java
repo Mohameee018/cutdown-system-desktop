@@ -360,6 +360,11 @@ public class ProductsPanel extends JPanel {
             imageMap.put(color,list);
         };
         colorPick.addActionListener(e->{ if(colorPick.getItemCount()>0) loadPhotos.run(); });
+        for(JTextField f:paths) f.getDocument().addDocumentListener(new DocumentListener(){
+            public void insertUpdate(DocumentEvent e){saveCurrentPhotos.run();}
+            public void removeUpdate(DocumentEvent e){saveCurrentPhotos.run();}
+            public void changedUpdate(DocumentEvent e){saveCurrentPhotos.run();}
+        });
         g.gridx=0;g.gridy=0;photos.add(new JLabel("Color"),g);g.gridx=1;photos.add(colorPick,g);
         for(int i=0;i<3;i++){final int n=i;g.gridx=0;g.gridy=i+1;photos.add(new JLabel("Image "+(i+1)),g);g.gridx=1;JPanel line=new JPanel(new BorderLayout(6,0));line.setBackground(WHITE);line.add(paths[i],BorderLayout.CENTER);JButton choose=button("Choose",new Color(240,243,243),DARK);choose.addActionListener(e->{JFileChooser fc=new JFileChooser();fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Image Files","jpg","jpeg","png","webp","gif"));if(fc.showOpenDialog(d)==JFileChooser.APPROVE_OPTION)paths[n].setText(fc.getSelectedFile().getAbsolutePath());});line.add(choose,BorderLayout.EAST);photos.add(line,g);}
         g.gridx=1;g.gridy=4;JButton clearPhotos=button("Clear color photos",new Color(245,235,235),new Color(130,55,55));clearPhotos.addActionListener(e->{for(JTextField f:paths)f.setText("");});photos.add(clearPhotos,g);
