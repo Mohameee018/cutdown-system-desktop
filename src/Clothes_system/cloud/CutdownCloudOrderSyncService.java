@@ -36,4 +36,15 @@ public final class CutdownCloudOrderSyncService {
     private static double num(Map<String,Object>m,String k){Object v=m.get(k);if(v instanceof Number)return((Number)v).doubleValue();try{return Double.parseDouble(str(m,k));}catch(Exception e){return 0;}}
     private static String displayDate(String s){try{return DISPLAY.format(Instant.parse(s).atZone(ZoneId.systemDefault()));}catch(Exception e){return s==null||s.isBlank()?DISPLAY.format(java.time.ZonedDateTime.now()):s;}}
     private static String formatMoney(double v){return Math.abs(v-Math.rint(v))<.005?String.format(Locale.US,"EGP %,.0f",v):String.format(Locale.US,"EGP %,.2f",v);}
+    public static void syncStatusAsync(String orderId, String orderStatus, String deliveryStatus) {
+        if (!CutdownCloudConfig.configured() || orderId == null || orderId.isBlank()) return;
+        Thread t = new Thread(() -> {
+            try {
+                String json = "{\"order_id\":\"" + escape(orderId) + "\",\"order_status\":\"" + escape(orderStatus) + "\",\"delivery_status\":\"" + escape(deliveryStatus) + "\"}";
+                new CutdownCloudClient().postJson("/api/desktop/orders/status", json);
+            } catch (Exception e) { System.err.println("[Cutdown] Website order status sync failed: " + e.getMessage()); }
+        }, "cutdown-order-status-sync");
+        t.setDaemon(true); t.start();
+    }
+    private static String escape(String value) { if (value == null) return ""; return value.replace("\\\\", "\\\\\\\\").replace("\"", "\\\\\""); }
 }
