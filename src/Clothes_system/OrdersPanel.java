@@ -1721,12 +1721,12 @@ public class OrdersPanel extends JPanel {
                     /*
                      * A brand-new order cannot already be returned: no
                      * return record can exist for an order that has not
-                     * been created yet. "Returned" / "Partially Returned"
+                     * been created yet. "Returned"
                      * are accounting-backed states owned exclusively by
                      * the Returns workflow.
                      */
                     if ("Returned".equals(delivery)
-                            || "Partially Returned".equals(delivery)) {
+                           ) {
 
                         showError(
                                 dialog,
@@ -2840,7 +2840,7 @@ public class OrdersPanel extends JPanel {
 
                     /*
                      * Order Edit must never be able to invent or discard a
-                     * return. "Returned" and "Partially Returned" are
+                     * return. "Returned" are
                      * accounting-backed states owned exclusively by the
                      * Returns workflow (see ReturnsPanel.syncOrderReturnStatus).
                      * A raw status pick from this dialog is only accepted
@@ -2849,7 +2849,7 @@ public class OrdersPanel extends JPanel {
                      * user is sent to the Returns screen instead.
                      */
                     if ("Returned".equals(delivery)
-                            || "Partially Returned".equals(delivery)) {
+                           ) {
 
                         boolean hasReturn =
                                 ReturnsPanel.hasProcessedReturn(order.id);
@@ -2861,11 +2861,7 @@ public class OrdersPanel extends JPanel {
                                 hasReturn && remaining == 0
                                         && "Returned".equals(delivery);
 
-                        boolean matchesPartialState =
-                                hasReturn && remaining > 0
-                                        && "Partially Returned".equals(delivery);
-
-                        if (!matchesReturnedState && !matchesPartialState) {
+                        if (!matchesReturnedState) {
 
                             reapplyOrderStock(order);
 
@@ -3591,7 +3587,7 @@ public class OrdersPanel extends JPanel {
                 && !"Out for Delivery".equalsIgnoreCase(d)
                 && !"Delivered".equalsIgnoreCase(d)
                 && !"Returned".equalsIgnoreCase(d)
-                && !"Partially Returned".equalsIgnoreCase(d);
+                ;
     }
 
     private List<Order> getVisibleOrdersInTableOrder() {
@@ -3854,24 +3850,6 @@ public class OrdersPanel extends JPanel {
              * A raw request must not invent a partial return either: it
              * is only valid when the order's own accounting backs it.
              */
-            if ("Partially Returned".equals(newStatus)
-                    && !(ReturnsPanel.hasProcessedReturn(order.id)
-                            && ReturnsPanel.getRemainingReturnableUnits(order) > 0)) {
-
-                newStatus = "Delivered";
-            }
-
-            /*
-             * Equally, a raw request must not erase a partial return.
-             */
-            if (!"Returned".equals(newStatus)
-                    && ReturnsPanel.hasProcessedReturn(order.id)
-                    && ReturnsPanel.getRemainingReturnableUnits(order) > 0
-                    && "Delivered".equals(newStatus)) {
-
-                newStatus = "Partially Returned";
-            }
-
             order.deliveryStatus =
                     newStatus;
 
