@@ -32,9 +32,12 @@ public class ProductManager {
         List<Product> persisted = PersistenceRepository.readProducts();
         if (!persisted.isEmpty()) {
             products.addAll(persisted);
-        } else if (PersistenceRepository.isInitialSeedPending()) {
-            loadInitialProducts();
-            for (Product p : products) PersistenceRepository.saveProduct(p);
+            removeLegacyDemoProducts();
+        }
+        // New installations start empty. Products are created by the user/admin,
+        // not by hidden demo seeding. This also prevents the old seed from returning.
+        if (PersistenceRepository.isInitialSeedPending()) {
+            PersistenceRepository.markInitialSeedComplete();
         }
     }
 
@@ -474,6 +477,18 @@ public class ProductManager {
         }
 
         return result;
+    }
+
+    private void removeLegacyDemoProducts() {
+        String[] ids = {"PRD-001","PRD-002","PRD-003","PRD-004","PRD-005","PRD-006"};
+        String[] names = {"Classic Hoodie","Slim Jeans","Basic T-Shirt","Oversized Shirt","Cargo Pants","Winter Jacket"};
+        for (int i = 0; i < ids.length; i++) {
+            Product p = findById(ids[i]);
+            if (p != null && names[i].equalsIgnoreCase(p.getName())) {
+                products.remove(p);
+                PersistenceRepository.deleteProduct(p.getId());
+            }
+        }
     }
 
     // =========================================================
