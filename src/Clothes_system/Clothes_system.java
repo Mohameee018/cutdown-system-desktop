@@ -238,6 +238,7 @@ public class Clothes_system extends JFrame {
             PersistenceRepository.saveAll();
             CutdownOnlineGate.installWatchdog(frame);
             frame.setVisible(true);
+            CutdownAutoUpdater.checkAsync(frame);
         });
     }
 }
