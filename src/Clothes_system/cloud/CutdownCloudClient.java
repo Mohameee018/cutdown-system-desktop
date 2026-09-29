@@ -57,6 +57,40 @@ public final class CutdownCloudClient {
         throw last == null ? new IOException("Cutdown API request failed.") : last;
     }
 
+    public String login(String email, String password) throws IOException, InterruptedException {
+        String json = "{\\"email\\":\\"" + escapeJson(email) + "\\",\\"password\\":\\"" + escapeJson(password) + "\\"}";
+        HttpRequest request = rawRequest("/api/desktop/auth/login")
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(json))
+                .build();
+        HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IOException(response.body() == null || response.body().isBlank()
+                    ? "Login failed (HTTP " + response.statusCode() + ")" : response.body());
+        }
+        return response.body();
+    }
+
+    public String getWithAccessToken(String path) throws IOException, InterruptedException {
+        return get(path);
+    }
+
+    private HttpRequest.Builder rawRequest(String path) {
+        String base = CutdownCloudConfig.baseUrl();
+        if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
+        String normalized = path == null ? "" : path.trim();
+        if (!normalized.startsWith("/")) normalized = "/" + normalized;
+        return HttpRequest.newBuilder()
+                .uri(URI.create(base + normalized))
+                .timeout(Duration.ofMillis(CutdownCloudConfig.timeoutMillis()))
+                .header("Accept", "application/json");
+    }
+
+    private static String escapeJson(String value) {
+        if (value == null) return "";
+        return value.replace("\\\\", "\\\\\\\\").replace("\\"", "\\\\"");
+    }
+
     private HttpRequest.Builder request(String path) {
         String base = CutdownCloudConfig.baseUrl();
         if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
