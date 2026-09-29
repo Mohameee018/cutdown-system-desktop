@@ -363,14 +363,12 @@ public class ProductsPanel extends JPanel {
         g.gridx=0;g.gridy=0;photos.add(new JLabel("Color"),g);g.gridx=1;photos.add(colorPick,g);
         for(int i=0;i<3;i++){final int n=i;g.gridx=0;g.gridy=i+1;photos.add(new JLabel("Image "+(i+1)),g);g.gridx=1;JPanel line=new JPanel(new BorderLayout(6,0));line.setBackground(WHITE);line.add(paths[i],BorderLayout.CENTER);JButton choose=button("Choose",new Color(240,243,243),DARK);choose.addActionListener(e->{JFileChooser fc=new JFileChooser();fc.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Image Files","jpg","jpeg","png","webp","gif"));if(fc.showOpenDialog(d)==JFileChooser.APPROVE_OPTION)paths[n].setText(fc.getSelectedFile().getAbsolutePath());});line.add(choose,BorderLayout.EAST);photos.add(line,g);}
         g.gridx=1;g.gridy=4;JButton clearPhotos=button("Clear color photos",new Color(245,235,235),new Color(130,55,55));clearPhotos.addActionListener(e->{for(JTextField f:paths)f.setText("");});photos.add(clearPhotos,g);
-        root.add(photos,BorderLayout.SOUTH);
-
         JButton add=button("+ Add Variant",PRIMARY,Color.WHITE);add.addActionListener(e->vm.addRow(new Object[]{"","",0}));
         JButton remove=button("Remove Selected",new Color(245,235,235),new Color(130,55,55));remove.addActionListener(e->{int r=vt.getSelectedRow();if(r>=0)vm.removeRow(vt.convertRowIndexToModel(r));refreshColors.run();loadPhotos.run();});
         JButton save=button("Save Variants",PRIMARY,Color.WHITE);
         JButton cancel=button("Cancel",new Color(240,243,243),DARK);
         JPanel actions=new JPanel(new FlowLayout(FlowLayout.RIGHT,8,0));actions.setBackground(WHITE);actions.add(add);actions.add(remove);actions.add(cancel);actions.add(save);
-        JPanel south=new JPanel(new BorderLayout(0,10));south.setBackground(WHITE);south.add(actions,BorderLayout.SOUTH);root.add(south,BorderLayout.PAGE_END);
+        JPanel south=new JPanel(new BorderLayout(0,10));south.setBackground(WHITE);south.add(photos,BorderLayout.CENTER);south.add(actions,BorderLayout.SOUTH);root.add(south,BorderLayout.PAGE_END);
         cancel.addActionListener(e->d.dispose());
         save.addActionListener(e->{
             LinkedHashSet<String> keys=new LinkedHashSet<>();List<Product.ProductVariant> next=new ArrayList<>();int total=0;
