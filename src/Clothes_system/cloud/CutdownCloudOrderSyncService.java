@@ -1,0 +1,39 @@
+package Clothes_system.cloud;
+
+import Clothes_system.OrdersPanel;
+import Clothes_system.db.PersistenceRepository;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+
+public final class CutdownCloudOrderSyncService {
+    private static final DateTimeFormatter DISPLAY=DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm",Locale.ENGLISH);
+    private CutdownCloudOrderSyncService(){}
+    public static void syncOrdersAsync(Runnable done){
+        if(!CutdownCloudConfig.configured())return;
+        Thread t=new Thread(()->{try{
+            Object root=MiniJson.parse(new CutdownCloudClient().get("/api/desktop/orders"));
+            int count=0;if(root instanceof List<?> list)for(Object x:list)if(x instanceof Map<?,?> m)if(importOne(cast(m)))count++;
+            int finalCount=count;javax.swing.SwingUtilities.invokeLater(()->{if(done!=null)done.run();System.out.println("[Cutdown] Website orders synced: "+finalCount);});
+        }catch(Exception e){System.err.println("[Cutdown] Website order sync failed: "+e.getMessage());}},"cutdown-order-sync");t.setDaemon(true);t.start();
+    }
+    private static boolean importOne(Map<String,Object> o){
+        String id=str(o,"id");if(id.isBlank())return false;
+        String customer=str(o,"customer_name"),phone=str(o,"customer_phone"),address=str(o,"address"),city=str(o,"city");
+        if(!city.isBlank())address=city+(address.isBlank()?"":", "+address);
+        String payment="online".equalsIgnoreCase(str(o,"payment_method"))?"Online":"Cash";
+        String status="completed".equalsIgnoreCase(str(o,"order_status"))?"Completed":"Not Prepared";
+        String delivery="Delivered".equalsIgnoreCase(str(o,"delivery_status"))?"Delivered":"With Shipping Company";
+        OrdersPanel.Order order=OrdersPanel.Order.persistenceCreate(id,customer,phone,"",address,displayDate(str(o,"created_at")),payment,status,delivery,0,0,"Website order");
+        order.persistenceSetTotal(formatMoney(num(o,"total_amount")));
+        Object items=o.get("order_items");if(items instanceof List<?> list)for(Object x:list)if(x instanceof Map<?,?>m){Map<String,Object>i=cast(m);
+            order.persistenceAddItem(OrdersPanel.OrderItem.persistenceCreate(str(i,"product_name"),str(i,"product_id"),str(i,"sku"),str(i,"category"),str(i,"size"),str(i,"color"),num(i,"unit_price"),num(i,"cost_price"),Math.max(1,(int)num(i,"quantity"))));}
+        PersistenceRepository.saveOrder(order);synchronized(OrdersPanel.getOrders()){OrdersPanel.getOrders().removeIf(e->id.equals(e.getId()));OrdersPanel.getOrders().add(order);}return true;
+    }
+    @SuppressWarnings("unchecked")private static Map<String,Object>cast(Map<?,?>m){return(Map<String,Object>)(Map<?,?>)m;}
+    private static String str(Map<String,Object>m,String k){Object v=m.get(k);return v==null?"":String.valueOf(v);}
+    private static double num(Map<String,Object>m,String k){Object v=m.get(k);if(v instanceof Number)return((Number)v).doubleValue();try{return Double.parseDouble(str(m,k));}catch(Exception e){return 0;}}
+    private static String displayDate(String s){try{return DISPLAY.format(Instant.parse(s).atZone(ZoneId.systemDefault()));}catch(Exception e){return s==null||s.isBlank()?DISPLAY.format(java.time.ZonedDateTime.now()):s;}}
+    private static String formatMoney(double v){return Math.abs(v-Math.rint(v))<.005?String.format(Locale.US,"EGP %,.0f",v):String.format(Locale.US,"EGP %,.2f",v);}
+}
