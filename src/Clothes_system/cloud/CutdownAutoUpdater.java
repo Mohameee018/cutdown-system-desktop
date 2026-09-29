@@ -21,9 +21,9 @@ public final class CutdownAutoUpdater {
                 String response = new CutdownCloudClient().get("/api/desktop/update");
                 Object parsed = MiniJson.parse(response);
                 if (!(parsed instanceof Map<?,?> map)) return;
-                String latest = String.valueOf(map.getOrDefault("version", ""));
-                String url = String.valueOf(map.getOrDefault("download_url", ""));
-                boolean mandatory = Boolean.parseBoolean(String.valueOf(map.getOrDefault("mandatory", "false")));
+                String latest = value(map, "version");
+                String url = value(map, "download_url");
+                boolean mandatory = Boolean.parseBoolean(value(map, "mandatory"));
                 String current = currentVersion();
                 if (latest.isBlank() || url.isBlank() || compareVersions(latest, current) <= 0) return;
 
@@ -43,7 +43,7 @@ public final class CutdownAutoUpdater {
         t.start();
     }
 
-    private static String currentVersion() {
+    private static String value(Map<?,?> map, String key) { Object v = map.get(key); return v == null ? "" : String.valueOf(v); }\n\n    private static String currentVersion() {
         return System.getProperty("cutdown.version",
                 System.getenv().getOrDefault("CUTDOWN_DESKTOP_VERSION", "1.0.0"));
     }
