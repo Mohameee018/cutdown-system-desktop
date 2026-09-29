@@ -548,7 +548,6 @@ public class OrdersPanel extends JPanel {
                                 "With Shipping Company",
                                 "Out for Delivery",
                                 "Delivered",
-                                "Partially Returned",
                                 "Returned"
                         }
                 );
@@ -1438,7 +1437,6 @@ public class OrdersPanel extends JPanel {
                                 "With Shipping Company",
                                 "Out for Delivery",
                                 "Delivered",
-                                "Partially Returned",
                                 "Returned"
                         }
                 );
@@ -2418,7 +2416,6 @@ public class OrdersPanel extends JPanel {
                                 "With Shipping Company",
                                 "Out for Delivery",
                                 "Delivered",
-                                "Partially Returned",
                                 "Returned"
                         }
                 );
