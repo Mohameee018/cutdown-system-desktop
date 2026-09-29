@@ -8,17 +8,17 @@ public final class CutdownCloudReturnSyncService {
     private CutdownCloudReturnSyncService() {}
 
     public static void syncReturnAsync(OrdersPanel.Order order) {
-        if (!CutdownCloudConfig.configured() || order == null || order.id == null || order.id.isBlank()) return;
+        if (!CutdownCloudConfig.configured() || order == null || order.getId() == null || order.getId().isBlank()) return;
 
         Thread t = new Thread(() -> {
             try {
-                List<ReturnsPanel.ReturnSnapshot> rows = ReturnsPanel.getReturnSnapshotsForOrder(order.id);
+                List<ReturnsPanel.ReturnSnapshot> rows = ReturnsPanel.getReturnSnapshotsForOrder(order.getId());
                 if (rows.isEmpty()) return;
 
                 ReturnsPanel.ReturnSnapshot first = rows.get(0);
                 StringBuilder json = new StringBuilder();
                 json.append("{");
-                json.append("\"order_id\":").append(q(order.id)).append(",");
+                json.append("\"order_id\":").append(q(order.getId())).append(",");
                 json.append("\"reason\":").append(q(first.reason())).append(",");
                 json.append("\"disposition\":").append(q(first.disposition())).append(",");
                 json.append("\"amount\":").append(sumAmount(rows)).append(",");
