@@ -1,5 +1,7 @@
 package Clothes_system;
 
+import Clothes_system.cloud.CutdownCloudSyncService;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -304,7 +306,7 @@ public class ProductsPanel extends JPanel {
             if(!edit){
                 Product p=new Product(manager.generateProductId(),sSku,sName,sCat,sDesc,image[0],sp,cp,q,mq);
                 p.addVariant(new Product.ProductVariant(p.getId()+"-V001",sColor,sz,q));
-                if(!manager.addProduct(p)){JOptionPane.showMessageDialog(d,"Could not add the product.","Error",JOptionPane.ERROR_MESSAGE);return;}
+                if(!manager.addProduct(p)){JOptionPane.showMessageDialog(d,"Could not add the product.","Error",JOptionPane.ERROR_MESSAGE);return;}\n                CutdownCloudSyncService.syncProductAsync(p);
                 createdProduct=p;
             }else{
                 existing.setSku(sSku);existing.setName(sName);existing.setCategory(sCat);existing.setDescription(sDesc);existing.setImagePath(image[0]);existing.setMinimumStock(mq);
@@ -312,7 +314,7 @@ public class ProductsPanel extends JPanel {
                 if(existing.getStockQuantity()!=q)existing.setStock(q,"Product edited");
                 if(existing.getVariants().isEmpty())existing.addVariant(new Product.ProductVariant(existing.getId()+"-V001",sColor,sz,q));
                 else{Product.ProductVariant v=existing.getVariants().get(0);v.setColor(sColor);v.setSize(sz);v.setStockQuantity(q);}
-                manager.updateProduct(existing);
+                manager.updateProduct(existing);\n                CutdownCloudSyncService.syncProductAsync(existing);
             }
             refreshTable();d.dispose();
             JOptionPane.showMessageDialog(this,edit?"Product updated successfully!":"Product added successfully!","Success",JOptionPane.INFORMATION_MESSAGE);
@@ -397,7 +399,7 @@ public class ProductsPanel extends JPanel {
             // Keep previously saved photos for other colors, while dropping colors no longer used.
             imageMap.keySet().removeIf(k->!colors.contains(k));
             Clothes_system.db.PersistenceRepository.saveProductColorImages(product.getId(),imageMap);
-            Clothes_system.db.PersistenceRepository.saveProduct(product);
+            Clothes_system.db.PersistenceRepository.saveProduct(product);\n            CutdownCloudSyncService.syncProductAsync(product);
             JOptionPane.showMessageDialog(d,"Variants, sizes, stock and color photos saved.","Saved",JOptionPane.INFORMATION_MESSAGE);
             d.dispose();refreshTable();
         });
