@@ -8,13 +8,18 @@ package Clothes_system.cloud;
  * environment variables or JVM system properties.
  */
 public final class CutdownCloudConfig {
+    private static volatile String accessToken = "";
     private CutdownCloudConfig() {}
+
+    public static void setAccessToken(String token) { accessToken = token == null ? "" : token.trim(); }
+    public static String accessToken() { return accessToken; }
 
     public static String baseUrl() {
         return value("CUTDOWN_API_BASE_URL", "cutdown.api.baseUrl", "");
     }
 
     public static String syncToken() {
+        if (!accessToken.isBlank()) return accessToken;
         return value("CUTDOWN_DESKTOP_SYNC_TOKEN", "cutdown.api.syncToken", "");
     }
 
