@@ -1719,8 +1719,7 @@ public class ReturnsPanel extends JPanel {
      // for return but still has units not processed by Returns.
      for (OrdersPanel.Order order : OrdersPanel.orders) {
          if (order == null || order.items == null) continue;
-         if (!("Partially Returned".equals(order.deliveryStatus)
-                 || "Returned".equals(order.deliveryStatus))) continue;
+         if (!"Returned".equals(order.deliveryStatus)) continue;
          for (OrdersPanel.OrderItem item : order.items) {
              if (item == null) continue;
              pending += Math.max(0, item.quantity - getProcessedReturnQuantity(order, item));
@@ -1915,9 +1914,6 @@ public class ReturnsPanel extends JPanel {
             order.orderStatus = "Not Prepared";
             order.deliveredAt = null;
 
-        } else if (hasProcessedReturn(order.id)) {
-
-            order.deliveryStatus = "Partially Returned";
         }
     }
 
