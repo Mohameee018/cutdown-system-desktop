@@ -59,7 +59,7 @@ public final class CutdownAutoUpdater {
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
         HttpRequest request = HttpRequest.newBuilder(
-                URI.create("https://api.github.com/repos/Mohameee018/cutdown-system-desktop/releases/latest"))
+                URI.create("https://api.github.com/repos/Mohameee018/cutdown-system-desktop/releases"))
                 .timeout(Duration.ofSeconds(15))
                 .header("Accept", "application/vnd.github+json")
                 .header("User-Agent", "Cutdown-Desktop-Updater")
@@ -67,14 +67,41 @@ public final class CutdownAutoUpdater {
                 .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new IOException("GitHub release metadata returned HTTP " + response.statusCode());
+            throw new IOException("GitHub releases metadata returned HTTP " + response.statusCode());
         }
 
         Object parsed = MiniJson.parse(response.body());
-        if (!(parsed instanceof Map<?,?> release)) throw new IOException("Invalid GitHub release metadata");
+        if (!(parsed instanceof List<?> releases)) throw new IOException("Invalid GitHub releases metadata");
 
-        String tag = value(release, "tag_name").replaceFirst("^[vV]", "");
-        Object assetsValue = release.get("assets");
+        Map<?,?> bestRelease = null;
+        String bestVersion = "";
+        for (Object item : releases) {
+            if (!(item instanceof Map<?,?> release)) continue;
+            if (Boolean.parseBoolean(value(release, "draft"))
+                    || Boolean.parseBoolean(value(release, "prerelease"))) continue;
+
+            String tag = value(release, "tag_name").replaceFirst("^[vV]", "").trim();
+            if (tag.isBlank() || compareVersions(tag, bestVersion) <= 0) continue;
+
+            Object assetsValue = release.get("assets");
+            if (!(assetsValue instanceof List<?> assets)) continue;
+            boolean hasExe = false;
+            boolean hasChecksum = false;
+            for (Object assetValue : assets) {
+                if (!(assetValue instanceof Map<?,?> asset)) continue;
+                String name = value(asset, "name");
+                if (name.toLowerCase().endsWith(".exe")) hasExe = true;
+                if ("SHA256SUMS.txt".equalsIgnoreCase(name)) hasChecksum = true;
+            }
+            if (hasExe && hasChecksum) {
+                bestRelease = release;
+                bestVersion = tag;
+            }
+        }
+
+        if (bestRelease == null) throw new IOException("No valid GitHub release found");
+
+        Object assetsValue = bestRelease.get("assets");
         if (!(assetsValue instanceof List<?> assets)) throw new IOException("GitHub release has no assets");
 
         String downloadUrl = "";
@@ -90,11 +117,11 @@ public final class CutdownAutoUpdater {
             }
         }
 
-        if (tag.isBlank() || downloadUrl.isBlank() || sha256.isBlank()) {
+        if (bestVersion.isBlank() || downloadUrl.isBlank() || sha256.isBlank()) {
             throw new IOException("GitHub release metadata is incomplete");
         }
 
-        return "{\"version\":\"" + escapeJson(tag)
+        return "{\"version\":\"" + escapeJson(bestVersion)
                 + "\",\"download_url\":\"" + escapeJson(downloadUrl)
                 + "\",\"sha256\":\"" + escapeJson(sha256)
                 + "\",\"mandatory\":false}";
