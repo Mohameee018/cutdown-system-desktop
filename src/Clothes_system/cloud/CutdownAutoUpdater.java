@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 public final class CutdownAutoUpdater {
@@ -19,7 +20,7 @@ public final class CutdownAutoUpdater {
     public static void checkAsync(Window owner) {
         Thread t = new Thread(() -> {
             try {
-                String response = new CutdownCloudClient().get("/api/desktop/update");
+                String response = fetchUpdateMetadata();
                 Object parsed = MiniJson.parse(response);
                 if (!(parsed instanceof Map<?,?> map)) return;
                 String latest = value(map, "version");
@@ -43,6 +44,81 @@ public final class CutdownAutoUpdater {
         }, "cutdown-auto-update-check");
         t.setDaemon(true);
         t.start();
+    }
+
+    private static String fetchUpdateMetadata() throws Exception {
+        try {
+            if (CutdownCloudConfig.configured()) {
+                return new CutdownCloudClient().get("/api/desktop/update");
+            }
+        } catch (Exception ignored) {
+            // Public GitHub release metadata is the fallback.
+        }
+
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
+        HttpRequest request = HttpRequest.newBuilder(
+                URI.create("https://api.github.com/repos/Mohameee018/cutdown-system-desktop/releases/latest"))
+                .timeout(Duration.ofSeconds(15))
+                .header("Accept", "application/vnd.github+json")
+                .header("User-Agent", "Cutdown-Desktop-Updater")
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IOException("GitHub release metadata returned HTTP " + response.statusCode());
+        }
+
+        Object parsed = MiniJson.parse(response.body());
+        if (!(parsed instanceof Map<?,?> release)) throw new IOException("Invalid GitHub release metadata");
+
+        String tag = value(release, "tag_name").replaceFirst("^[vV]", "");
+        Object assetsValue = release.get("assets");
+        if (!(assetsValue instanceof List<?> assets)) throw new IOException("GitHub release has no assets");
+
+        String downloadUrl = "";
+        String sha256 = "";
+        for (Object assetValue : assets) {
+            if (!(assetValue instanceof Map<?,?> asset)) continue;
+            String name = value(asset, "name");
+            String browserUrl = value(asset, "browser_download_url");
+            if (name.toLowerCase().endsWith(".exe")) {
+                downloadUrl = browserUrl;
+            } else if ("SHA256SUMS.txt".equalsIgnoreCase(name)) {
+                sha256 = readChecksumFile(client, browserUrl);
+            }
+        }
+
+        if (tag.isBlank() || downloadUrl.isBlank() || sha256.isBlank()) {
+            throw new IOException("GitHub release metadata is incomplete");
+        }
+
+        return "{\"version\":\"" + escapeJson(tag)
+                + "\",\"download_url\":\"" + escapeJson(downloadUrl)
+                + "\",\"sha256\":\"" + escapeJson(sha256)
+                + "\",\"mandatory\":false}";
+    }
+
+    private static String readChecksumFile(HttpClient client, String url) throws Exception {
+        if (url.isBlank()) return "";
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                .timeout(Duration.ofSeconds(15))
+                .header("Accept", "application/octet-stream")
+                .header("User-Agent", "Cutdown-Desktop-Updater")
+                .GET()
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) return "";
+
+        String[] lines = response.body().split("\\R");
+        for (String line : lines) {
+            String[] parts = line.trim().split("\\s+", 2);
+            if (parts.length == 2 && parts[1].toLowerCase().endsWith(".exe")) {
+                return parts[0].trim().toLowerCase();
+            }
+        }
+        return "";
     }
 
     private static String value(Map<?,?> map, String key) { Object v = map.get(key); return v == null ? "" : String.valueOf(v); }
