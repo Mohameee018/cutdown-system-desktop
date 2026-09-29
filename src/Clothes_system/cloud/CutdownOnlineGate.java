@@ -7,7 +7,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class CutdownOnlineGate {
     private CutdownOnlineGate() {}
 
-    public static boolean requireOnlineAtStartup(Component parent) {
+    public static boolean requireLogin(Window owner) {\n        return CutdownLoginDialog.showAndLogin(owner);\n    }\n\n    public static void checkForUpdates(Window owner) {\n        CutdownAutoUpdater.checkAsync(owner);\n    }\n\n    public static boolean requireOnlineAtStartup(Component parent) {
         while (true) {
             if (isOnline()) return true;
             int choice = JOptionPane.showOptionDialog(
