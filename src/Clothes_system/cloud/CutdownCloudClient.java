@@ -7,12 +7,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 
-/**
- * Small HTTP client used by the desktop sync layer.
- *
- * It deliberately talks to the Cutdown protected API instead of embedding a
- * Supabase service-role credential in the desktop application.
- */
 public final class CutdownCloudClient {
     private final HttpClient http;
 
@@ -27,52 +21,40 @@ public final class CutdownCloudClient {
     }
 
     public String get(String path) throws IOException, InterruptedException {
-        HttpRequest request = request(path)
-                .GET()
-                .build();
-
-        HttpResponse<String> response = http.send(
-                request,
-                HttpResponse.BodyHandlers.ofString()
-        );
-
-        if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new IOException(
-                    "Cutdown API returned HTTP " + response.statusCode()
-                            + ": " + response.body()
-            );
-        }
-
-        return response.body();
+        return sendWithRetry(request(path).GET().build());
     }
 
-    public String postJson(String path, String json)
-            throws IOException, InterruptedException {
-
+    public String postJson(String path, String json) throws IOException, InterruptedException {
         HttpRequest request = request(path)
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(json == null ? "{}" : json))
                 .build();
+        return sendWithRetry(request);
+    }
 
-        HttpResponse<String> response = http.send(
-                request,
-                HttpResponse.BodyHandlers.ofString()
-        );
+    private String sendWithRetry(HttpRequest request) throws IOException, InterruptedException {
+        IOException last = null;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
+                if (response.statusCode() >= 200 && response.statusCode() < 300) return response.body();
 
-        if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new IOException(
-                    "Cutdown API returned HTTP " + response.statusCode()
-                            + ": " + response.body()
-            );
+                if (response.statusCode() >= 400 && response.statusCode() < 500) {
+                    throw new IOException("Cutdown API returned HTTP " + response.statusCode() + ": " + response.body());
+                }
+                last = new IOException("Cutdown API returned HTTP " + response.statusCode() + ": " + response.body());
+            } catch (IOException e) {
+                last = e;
+            }
+
+            if (attempt < 3) Thread.sleep(1000L * attempt);
         }
-
-        return response.body();
+        throw last == null ? new IOException("Cutdown API request failed.") : last;
     }
 
     private HttpRequest.Builder request(String path) {
         String base = CutdownCloudConfig.baseUrl();
         if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
-
         String normalized = path == null ? "" : path.trim();
         if (!normalized.startsWith("/")) normalized = "/" + normalized;
 
