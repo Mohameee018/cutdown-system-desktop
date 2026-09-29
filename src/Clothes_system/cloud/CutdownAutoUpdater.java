@@ -121,6 +121,11 @@ public final class CutdownAutoUpdater {
         return "";
     }
 
+    private static String escapeJson(String value) {
+        if (value == null) return "";
+        return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "\\r").replace("\n", "\\n");
+    }
+
     private static String value(Map<?,?> map, String key) { Object v = map.get(key); return v == null ? "" : String.valueOf(v); }
 
     private static String currentVersion() {
