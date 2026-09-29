@@ -1,4 +1,5 @@
 name: Desktop release
+# [build-release] v1.1.0.4
 # Build trigger: cloud-login release
 
 on:
