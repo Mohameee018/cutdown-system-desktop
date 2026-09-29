@@ -1,6 +1,7 @@
 package Clothes_system;
 
 import Clothes_system.db.PersistenceRepository;
+import Clothes_system.cloud.CutdownCloudOrderSyncService;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -122,6 +123,12 @@ public class OrdersPanel extends JPanel {
         add(createOrdersContent(), BorderLayout.CENTER);
 
         loadFromPersistence();
+        CutdownCloudOrderSyncService.syncOrdersAsync(() -> {
+            refreshOrdersTable();
+            updateSummary();
+            applySort();
+            applyFilters();
+        });
         if (orders.isEmpty() && PersistenceRepository.isInitialSeedPending()) {
             createDemoOrders();
             for (Order o : orders) PersistenceRepository.saveOrder(o);
