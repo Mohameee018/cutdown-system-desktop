@@ -23,8 +23,8 @@ public final class CutdownCloudOrderSyncService {
         String customer=str(o,"customer_name"),phone=str(o,"customer_phone"),address=str(o,"address"),city=str(o,"city");
         if(!city.isBlank())address=city+(address.isBlank()?"":", "+address);
         String payment="online".equalsIgnoreCase(str(o,"payment_method"))?"Online":"Cash";
-        String status="completed".equalsIgnoreCase(str(o,"order_status"))?"Completed":"Not Prepared";
-        String delivery="Delivered".equalsIgnoreCase(str(o,"delivery_status"))?"Delivered":"With Shipping Company";
+        String status=mapWebsiteOrderStatus(str(o,"order_status"));
+        String delivery=mapWebsiteDeliveryStatus(str(o,"delivery_status"));
         OrdersPanel.Order order=OrdersPanel.Order.persistenceCreate(id,customer,phone,"",address,displayDate(str(o,"created_at")),payment,status,delivery,0,0,"Website order");
         order.persistenceSetTotal(formatMoney(num(o,"total_amount")));
         Object items=o.get("order_items");if(items instanceof List<?> list)for(Object x:list)if(x instanceof Map<?,?>m){Map<String,Object>i=cast(m);
@@ -35,6 +35,27 @@ public final class CutdownCloudOrderSyncService {
     private static String str(Map<String,Object>m,String k){Object v=m.get(k);return v==null?"":String.valueOf(v);}
     private static double num(Map<String,Object>m,String k){Object v=m.get(k);if(v instanceof Number)return((Number)v).doubleValue();try{return Double.parseDouble(str(m,k));}catch(Exception e){return 0;}}
     private static String displayDate(String s){try{return DISPLAY.format(Instant.parse(s).atZone(ZoneId.systemDefault()));}catch(Exception e){return s==null||s.isBlank()?DISPLAY.format(java.time.ZonedDateTime.now()):s;}}
+    private static String mapWebsiteOrderStatus(String value){
+        String v=value==null?"":value.trim().toLowerCase(Locale.ROOT);
+        return switch(v){
+            case "preparing" -> "Preparing";
+            case "prepared" -> "Prepared";
+            case "completed" -> "Completed";
+            case "pending","confirmed","" -> "Not Prepared";
+            default -> "Not Prepared";
+        };
+    }
+    private static String mapWebsiteDeliveryStatus(String value){
+        String v=value==null?"":value.trim().toLowerCase(Locale.ROOT);
+        return switch(v){
+            case "pending","" -> "Pending";
+            case "shipped","with shipping company" -> "With Shipping Company";
+            case "out for delivery" -> "Out for Delivery";
+            case "delivered" -> "Delivered";
+            case "returned" -> "Returned";
+            default -> "Pending";
+        };
+    }
     private static String formatMoney(double v){return Math.abs(v-Math.rint(v))<.005?String.format(Locale.US,"EGP %,.0f",v):String.format(Locale.US,"EGP %,.2f",v);}
     public static void syncStatusAsync(String orderId, String orderStatus, String deliveryStatus) {
         if (!CutdownCloudConfig.configured() || orderId == null || orderId.isBlank()) return;
