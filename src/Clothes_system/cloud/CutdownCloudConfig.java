@@ -8,6 +8,7 @@ package Clothes_system.cloud;
  * environment variables or JVM system properties.
  */
 public final class CutdownCloudConfig {
+    private static final String DEFAULT_BASE_URL = "https://cutdown-store-production.up.railway.app";
     private static volatile String accessToken = "";
     private CutdownCloudConfig() {}
 
@@ -15,7 +16,7 @@ public final class CutdownCloudConfig {
     public static String accessToken() { return accessToken; }
 
     public static String baseUrl() {
-        return value("CUTDOWN_API_BASE_URL", "cutdown.api.baseUrl", "");
+        return value("CUTDOWN_API_BASE_URL", "cutdown.api.baseUrl", DEFAULT_BASE_URL);
     }
 
     public static String syncToken() {
