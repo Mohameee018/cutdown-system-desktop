@@ -27,13 +27,13 @@ public final class CutdownAutoUpdater {
                 String expectedSha256 = value(map, "sha256").trim().toLowerCase();
                 boolean mandatory = Boolean.parseBoolean(value(map, "mandatory"));
                 String current = currentVersion();
-                if (latest.isBlank() || url.isBlank() || compareVersions(latest, current) <= 0) return;
+                if (latest.isBlank() || url.isBlank() || expectedSha256.isBlank() || compareVersions(latest, current) <= 0) return;
 
                 SwingUtilities.invokeLater(() -> {
                     String message = "A new Cutdown version (" + latest + ") is available.";
                     int choice = JOptionPane.showConfirmDialog(owner, message + "\n\nUpdate now?", "Cutdown Update",
                             JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE);
-                    if (choice == JOptionPane.YES_OPTION || mandatory) {
+                    if (mandatory || choice == JOptionPane.YES_OPTION) {
                         downloadAndLaunch(url, expectedSha256, owner);
                     }
                 });
